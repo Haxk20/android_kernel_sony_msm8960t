@@ -2306,15 +2306,7 @@ shmem_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
 				return error;
 			}
 		}
-#ifdef CONFIG_TMPFS_POSIX_ACL
-		error = generic_acl_init(inode, dir);
-		if (error) {
-			iput(inode);
-			return error;
-		}
-#else
 		error = 0;
-#endif
 		d_tmpfile(dentry, inode);
 	}
 	return error;
