@@ -678,11 +678,13 @@ static int cyttsp4_mt_probe(struct cyttsp4_device *ttsp)
 				max = max_y;
 			else if (i == CY_ABS_P_OST)
 				max = max_p;
+			if (signal != ABS_MT_PRESSURE) {
 			input_set_abs_params(md->input, signal, min, max,
 				md->pdata->frmwrk->abs
 				[(i * CY_NUM_ABS_SET) + CY_FUZZ_OST],
 				md->pdata->frmwrk->abs
 				[(i * CY_NUM_ABS_SET) + CY_FLAT_OST]);
+			}
 			dev_dbg(dev, "%s: register signal=%02X min=%d max=%d\n",
 				__func__, signal, min, max);
 			if ((i == CY_ABS_ID_OST) &&
