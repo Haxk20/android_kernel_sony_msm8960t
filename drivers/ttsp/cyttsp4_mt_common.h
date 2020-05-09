@@ -27,12 +27,11 @@
  *
  */
 
-#include <linux/cyttsp4_bus.h>
+#include <linux/input/cyttsp4_bus.h>
 
 #include <linux/delay.h>
-#ifdef CONFIG_FB
-#include <linux/notifier.h>
-#include <linux/fb.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
 #endif
 #include <linux/gpio.h>
 #include <linux/input.h>
@@ -43,9 +42,12 @@
 #include <linux/pm_runtime.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
+#include <linux/notifier.h>
+#include <linux/fb.h>
 
-#include <linux/cyttsp4_core.h>
-#include <linux/cyttsp4_mt.h>
+
+#include <linux/input/cyttsp4_core.h>
+#include <linux/input/cyttsp4_mt.h>
 #include "cyttsp4_regs.h"
 
 struct cyttsp4_mt_data;
@@ -53,12 +55,13 @@ struct cyttsp4_mt_function {
 	int (*mt_release)(struct cyttsp4_device *ttsp);
 	int (*mt_probe)(struct cyttsp4_device *ttsp,
 			struct cyttsp4_mt_data *md);
-	void (*report_slot_liftoff)(struct cyttsp4_mt_data *md);
+	void (*report_slot_liftoff)(struct cyttsp4_mt_data *md, int max_slots);
 	void (*input_sync)(struct input_dev *input);
-	void (*input_report)(struct input_dev *input, int sig, int t);
-	void (*final_sync)(struct input_dev *input, int max_tchs,
-			int mt_sync_count, int *ids);
-	int (*input_register_device)(struct input_dev *input, int max_tchs);
+	void (*input_report)(struct input_dev *input, int sig, int t,
+			int type);
+	void (*final_sync)(struct input_dev *input, int max_slots,
+			int mt_sync_count, unsigned long *ids);
+	int (*input_register_device)(struct input_dev *input, int max_slots);
 };
 
 struct cyttsp4_mt_data {
@@ -67,20 +70,21 @@ struct cyttsp4_mt_data {
 	struct cyttsp4_sysinfo *si;
 	struct input_dev *input;
 	struct cyttsp4_mt_function mt_function;
-#ifdef CONFIG_FB
-	struct notifier_block fb_notif;
-	bool fb_suspended;
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend es;
 #endif
 	struct mutex report_lock;
 	bool is_suspended;
+	bool input_device_registered;
 	char phys[NAME_MAX];
-	int num_prv_tch;
+	int num_prv_rec; /* Number of previous touch records */
 	int prv_tch_type;
 #ifdef VERBOSE_DEBUG
 	u8 pr_buf[CY_MAX_PRBUF_SIZE];
 #endif
+	/* The framebuffer notifier block */
+	struct notifier_block fb_notif;
 };
 
 extern void cyttsp4_init_function_ptrs(struct cyttsp4_mt_data *md);
 extern struct cyttsp4_driver cyttsp4_mt_driver;
-
